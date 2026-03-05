@@ -35,7 +35,18 @@ interface RoomStore extends RoomState {
   setFloorColor: (color: string) => void;
   setCeilingColor: (color: string) => void;
   setRoomDimensions: (w: number, d: number, h: number) => void;
+  setWalls: (walls: Wall[]) => void;
+  setFurniture: (items: FurnitureItem[]) => void;
+  setLights: (lights: RoomLight[]) => void;
+  setCables: (cables: CablePoint[]) => void;
   deleteSelected: () => void;
+  viewMode: "2d" | "3d" | "render";
+  setViewMode: (mode: "2d" | "3d" | "render") => void;
+  clearRoom: () => void;
+  showGrid: boolean;
+  toggleGrid: () => void;
+  theme: "light" | "dark";
+  setTheme: (theme: "light" | "dark") => void;
 }
 
 export const useRoomStore = create<RoomStore>((set, get) => ({
@@ -67,6 +78,9 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   selectedId: null,
   selectedColor: "#FFFFFF",
   selectedFurnitureType: "sofa",
+  viewMode: "3d",
+  showGrid: true,
+  theme: "dark",
 
   setTool: (tool) => set({ activeTool: tool, selectedId: null }),
   setSelectedId: (id) => set({ selectedId: id }),
@@ -128,6 +142,11 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   setRoomDimensions: (w, d, h) =>
     set({ roomWidth: w, roomDepth: d, roomHeight: h }),
 
+  setWalls: (walls) => set({ walls }),
+  setFurniture: (furniture) => set({ furniture }),
+  setLights: (lights) => set({ lights }),
+  setCables: (cables) => set({ cables }),
+
   deleteSelected: () => {
     const { selectedId } = get();
     if (!selectedId) return;
@@ -141,4 +160,26 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
       selectedId: null,
     }));
   },
+
+  setViewMode: (mode) => set({ viewMode: mode }),
+
+  toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
+  setTheme: (theme) => set({ theme }),
+
+  clearRoom: () =>
+    set({
+      walls: [],
+      furniture: [],
+      lights: [
+        {
+          id: "ambient-1",
+          type: "ambient",
+          position: [0, 3, 0],
+          color: "#FFFFFF",
+          intensity: 0.6,
+        },
+      ],
+      cables: [],
+      selectedId: null,
+    }),
 }));

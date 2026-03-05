@@ -13,8 +13,9 @@ const WallMesh: React.FC<{ wall: Wall; roomHeight: number }> = ({
     setSelectedId,
     selectedColor,
     updateWallSide,
+    viewMode,
   } = useRoomStore();
-  const height = wall.height || roomHeight;
+  const height = viewMode === "2d" ? 0.01 : wall.height || roomHeight;
 
   const dx = wall.end[0] - wall.start[0];
   const dz = wall.end[1] - wall.start[1];
@@ -58,6 +59,12 @@ const WallMesh: React.FC<{ wall: Wall; roomHeight: number }> = ({
       color: string;
       textureUrl?: string;
     }) => {
+      if (viewMode === "2d") {
+        return new THREE.MeshBasicMaterial({
+          color: isSelected ? "#ffffff" : "#444444",
+        });
+      }
+
       const mat = new THREE.MeshStandardMaterial({
         color: sideData?.color || wall.color,
         roughness: 0.8,

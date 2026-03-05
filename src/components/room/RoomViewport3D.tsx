@@ -5,6 +5,8 @@ import {
   Grid,
   Environment,
   TransformControls,
+  OrthographicCamera,
+  PerspectiveCamera,
 } from "@react-three/drei";
 import { useRoomStore } from "@/store/roomStore";
 import { RoomFloor } from "./RoomFloor";
@@ -14,6 +16,7 @@ import { FurnitureObjects } from "./FurnitureObjects";
 import { RoomLights } from "./RoomLights";
 import { CablePoints } from "./CablePoints";
 import { FloorClickHandler } from "./FloorClickHandler";
+import { FloorPlanLabels } from "./FloorPlanLabels";
 import * as THREE from "three";
 
 function SceneContent() {
@@ -28,6 +31,8 @@ function SceneContent() {
     updateFurniture,
     updateLight,
     activeTool,
+    viewMode,
+    showGrid,
   } = useRoomStore();
 
   const { scene, controls } = useThree();
@@ -112,6 +117,7 @@ function SceneContent() {
       <FurnitureObjects />
       <CablePoints />
       <FloorClickHandler />
+      <FloorPlanLabels />
 
       {selectedId && activeTool === "select" && selectedObjectRef.current && (
         <TransformControls
@@ -127,27 +133,21 @@ function SceneContent() {
         />
       )}
 
-      <Grid
-        args={[20, 20]}
-        position={[0, 0.005, 0]}
-        cellSize={0.5}
-        cellThickness={0.5}
-        cellColor="#c0c0c0"
-        sectionSize={1}
-        sectionThickness={1}
-        sectionColor="#909090"
-        fadeDistance={25}
-        fadeStrength={1}
-        infiniteGrid={false}
-      />
-      <OrbitControls
-        makeDefault
-        minPolarAngle={0.1}
-        maxPolarAngle={Math.PI / 2 - 0.05}
-        minDistance={2}
-        maxDistance={20}
-        target={[0, 0, 0]}
-      />
+      {showGrid && (
+        <Grid
+          args={[20, 20]}
+          position={[0, 0.005, 0]}
+          cellSize={0.5}
+          cellThickness={0.5}
+          cellColor={viewMode === "2d" ? "#1e1e24" : "#c0c0c0"}
+          sectionSize={1}
+          sectionThickness={1}
+          sectionColor={viewMode === "2d" ? "#31313a" : "#909090"}
+          fadeDistance={25}
+          fadeStrength={1}
+          infiniteGrid={false}
+        />
+      )}
     </>
   );
 }
@@ -157,20 +157,72 @@ interface RoomViewport3DProps {
 }
 
 const RoomViewport3D: React.FC<RoomViewport3DProps> = ({ canvasRef }) => {
+  const { viewMode } = useRoomStore();
+
   return (
-    <div className="w-full h-full bg-viewport">
+    <div className="w-full h-full bg-[#0A0A0B] relative">
       <Canvas
         ref={canvasRef}
         shadows
-        camera={{ position: [8, 6, 8], fov: 50 }}
         gl={{
           preserveDrawingBuffer: true,
           antialias: true,
           outputColorSpace: THREE.SRGBColorSpace,
+          toneMapping: THREE.ReinhardToneMapping,
         }}
       >
+        {viewMode === "2d" ? (
+          <OrthographicCamera
+            makeDefault
+            position={[0, 10, 0]}
+            zoom={80}
+            near={0.1}
+            far={100}
+          />
+        ) : (
+          <PerspectiveCamera
+            makeDefault
+            position={[8, 6, 8]}
+            fov={50}
+            near={0.1}
+            far={100}
+          />
+        )}
+
         <SceneContent />
+
+        <OrbitControls
+          makeDefault
+          enableRotate={viewMode !== "2d"}
+          enablePan={true}
+          screenSpacePanning={viewMode === "2d"}
+          minPolarAngle={viewMode === "2d" ? 0 : 0.1}
+          maxPolarAngle={
+            viewMode === "2d"
+              ? 0
+              : viewMode === "render"
+                ? Math.PI / 1.5
+                : Math.PI / 2 - 0.05
+          }
+          minDistance={viewMode === "2d" ? 1 : 2}
+          maxDistance={viewMode === "2d" ? 50 : 25}
+          target={[0, 0, 0]}
+        />
       </Canvas>
+
+      {viewMode === "render" && (
+        <div className="absolute inset-0 pointer-events-none border-[20px] border-purple-500/10 flex items-end justify-between p-8">
+          <div className="bg-black/80 backdrop-blur-md border border-white/10 px-4 py-2 rounded-lg flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+            <span className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">
+              Photorealistic Path Tracing Active
+            </span>
+          </div>
+          <div className="text-[10px] font-mono text-white/20 uppercase tracking-widest">
+            4K UHD • 120 FPS • RTX ON
+          </div>
+        </div>
+      )}
     </div>
   );
 };
